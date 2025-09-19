@@ -1,0 +1,153 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model alerts {
+  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  company_id  String?    @db.Uuid
+  device_id   String?    @db.Uuid
+  alert_type  String?
+  message     String?
+  created_at  DateTime?  @default(now()) @db.Timestamptz(6)
+  resolved_at DateTime?  @db.Timestamptz(6)
+  companies   companies? @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  devices     devices?   @relation(fields: [device_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model audit_logs {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id    String?   @db.Uuid
+  action     String?
+  detail     Json?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model commands {
+  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  device_id    String?   @db.Uuid
+  command_type String
+  payload      Json?
+  status       String    @default("pending")
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  sent_at      DateTime? @db.Timestamptz(6)
+  ack_at       DateTime? @db.Timestamptz(6)
+  devices      devices?  @relation(fields: [device_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model companies {
+  id         String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name       String
+  created_at DateTime?   @default(now()) @db.Timestamptz(6)
+  alerts     alerts[]
+  devices    devices[]
+  drivers    drivers[]
+  geofences  geofences[]
+  users      users[]
+  vehicles   vehicles[]
+}
+
+model device_models {
+  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name         String
+  manufacturer String?
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  devices      devices[]
+}
+
+model device_sensors {
+  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  device_id    String?   @db.Uuid
+  sensor_key   String
+  sensor_value String?
+  recorded_at  DateTime? @default(now()) @db.Timestamptz(6)
+  devices      devices?  @relation(fields: [device_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model devices {
+  id             String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  company_id     String?          @db.Uuid
+  model_id       String?          @db.Uuid
+  imei           String           @unique
+  name           String?
+  sim_number     String?
+  last_seen      DateTime?        @db.Timestamptz(6)
+  created_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  alerts         alerts[]
+  commands       commands[]
+  device_sensors device_sensors[]
+  companies      companies?       @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  device_models  device_models?   @relation(fields: [model_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  locations      locations[]
+  vehicles       vehicles[]
+}
+
+model drivers {
+  id             String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  company_id     String?    @db.Uuid
+  name           String
+  license_number String?
+  phone          String?
+  created_at     DateTime?  @default(now()) @db.Timestamptz(6)
+  companies      companies? @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model geofences {
+  id         String                   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  company_id String?                  @db.Uuid
+  name       String?
+  geom       Unsupported("geometry")?
+  created_at DateTime?                @default(now()) @db.Timestamptz(6)
+  companies  companies?               @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model locations {
+  id          String                   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  device_id   String?                  @db.Uuid
+  latitude    Float?
+  longitude   Float?
+  recorded_at DateTime?                @default(now()) @db.Timestamptz(6)
+  geom        Unsupported("geometry")?
+  speed       Float?
+  heading     Float?
+  raw_payload Json?
+  devices     devices?                 @relation(fields: [device_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
+}
+
+model users {
+  id            String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  company_id    String?      @db.Uuid
+  email         String       @unique
+  password_hash String
+  role          String       @default("user")
+  created_at    DateTime?    @default(now()) @db.Timestamptz(6)
+  audit_logs    audit_logs[]
+  companies     companies?   @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model vehicles {
+  id         String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  company_id String?    @db.Uuid
+  device_id  String?    @db.Uuid
+  plate      String?
+  vin        String?
+  model      String?
+  created_at DateTime?  @default(now()) @db.Timestamptz(6)
+  companies  companies? @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  devices    devices?   @relation(fields: [device_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
