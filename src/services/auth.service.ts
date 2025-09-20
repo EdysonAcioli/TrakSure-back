@@ -96,17 +96,13 @@ export class AuthService {
       where: { id },
       include: {
         companies: true
-      },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        company_id: true,
-        created_at: true,
-        companies: true
       }
     });
 
-    return user;
+    if (!user) return null;
+
+    // Remover password_hash da resposta
+    const { password_hash, ...userWithoutPassword } = user;
+    return userWithoutPassword;
   }
 }

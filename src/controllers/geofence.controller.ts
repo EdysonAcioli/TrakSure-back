@@ -30,7 +30,7 @@ export class GeofenceController {
       res.status(201).json({
         success: true,
         message: 'Geofence criada com sucesso',
-        data: result[0] || result
+        data: (result as any)[0] || result
       });
     } catch (error: any) {
       res.status(500).json({

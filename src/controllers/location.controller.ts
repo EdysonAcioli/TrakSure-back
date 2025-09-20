@@ -179,14 +179,16 @@ export class LocationController {
           const prev = locations[i - 1];
           const curr = locations[i];
           
-          // Calcular distância usando fórmula haversine (aproximada)
-          const distance = calculateDistance(
-            prev.latitude!, prev.longitude!,
-            curr.latitude!, curr.longitude!
-          );
-          totalDistance += distance;
+          if (prev && curr && prev.latitude && prev.longitude && curr.latitude && curr.longitude) {
+            // Calcular distância usando fórmula haversine (aproximada)
+            const distance = calculateDistance(
+              prev.latitude, prev.longitude,
+              curr.latitude, curr.longitude
+            );
+            totalDistance += distance;
+          }
           
-          if (curr.speed && curr.speed > maxSpeed) {
+          if (curr && curr.speed && curr.speed > maxSpeed) {
             maxSpeed = curr.speed;
           }
         }
@@ -195,8 +197,8 @@ export class LocationController {
         avgSpeed = speedSum / locations.length;
       }
 
-      const duration = locations.length > 0 
-        ? new Date(locations[locations.length - 1].recorded_at!).getTime() - new Date(locations[0].recorded_at!).getTime()
+      const duration = locations.length > 1 
+        ? new Date(locations[locations.length - 1]?.recorded_at!).getTime() - new Date(locations[0]?.recorded_at!).getTime()
         : 0;
 
       res.json({
