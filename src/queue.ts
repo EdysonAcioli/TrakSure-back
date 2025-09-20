@@ -1,10 +1,10 @@
 import amqplib from "amqplib";
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://localhost:5672";
-let channel: amqplib.Channel | null = null;
-let connection: amqplib.Connection | null = null;
+let channel: any = null;
+let connection: any = null;
 
-async function ensureChannel(): Promise<amqplib.Channel> {
+async function ensureChannel(): Promise<any> {
   if (channel) return channel;
   connection = await amqplib.connect(RABBITMQ_URL);
   channel = await connection.createChannel();
