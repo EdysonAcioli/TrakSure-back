@@ -1,13 +1,14 @@
-import { Router } from 'express';
-import { AlertController } from '../controllers/alert.controller.js';
-import { validateBody, validateQuery } from '../middleware/validation.js';
-import { authMiddleware, companyMiddleware } from '../middleware/auth.js';
-import { createAlertSchema, paginationSchema } from '../schemas/validation.js';
+import { Router } from "express";
+import { AlertController } from "../controllers/alert.controller.js";
+import { validateBody, validateQuery } from "../middleware/validation.js";
+import { authMiddleware, companyMiddleware } from "../middleware/auth.js";
+import { createAlertSchema, paginationSchema } from "../schemas/validation.js";
 
 const router = Router();
 
 // GET /alerts
-router.get('/',
+router.get(
+  "/",
   authMiddleware,
   companyMiddleware,
   validateQuery(paginationSchema),
@@ -15,7 +16,8 @@ router.get('/',
 );
 
 // POST /alerts
-router.post('/',
+router.post(
+  "/",
   authMiddleware,
   companyMiddleware,
   validateBody(createAlertSchema),
@@ -23,7 +25,8 @@ router.post('/',
 );
 
 // PUT /alerts/:id/resolve
-router.put('/:id/resolve',
+router.put(
+  "/:id/resolve",
   authMiddleware,
   companyMiddleware,
   AlertController.resolve

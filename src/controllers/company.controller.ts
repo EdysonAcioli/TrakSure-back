@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -14,25 +14,30 @@ export class CompanyController {
       const { name } = req.body;
 
       const company = await prisma.companies.create({
-        data: { name }
+        data: { name },
       });
 
       res.status(201).json({
         success: true,
-        message: 'Empresa criada com sucesso',
-        data: company
+        message: "Empresa criada com sucesso",
+        data: company,
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
 
   static async findAll(req: AuthRequest, res: Response) {
     try {
-      const { page = 1, limit = 10, sort = 'created_at', order = 'desc' } = req.query;
+      const {
+        page = 1,
+        limit = 10,
+        sort = "created_at",
+        order = "desc",
+      } = req.query;
       const offset = (page - 1) * limit;
 
       const [companies, total] = await Promise.all([
@@ -44,12 +49,12 @@ export class CompanyController {
             _count: {
               select: {
                 devices: true,
-                users: true
-              }
-            }
-          }
+                users: true,
+              },
+            },
+          },
         }),
-        prisma.companies.count()
+        prisma.companies.count(),
       ]);
 
       res.json({
@@ -60,14 +65,14 @@ export class CompanyController {
             page,
             limit,
             total,
-            totalPages: Math.ceil(total / limit)
-          }
-        }
+            totalPages: Math.ceil(total / limit),
+          },
+        },
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -81,7 +86,7 @@ export class CompanyController {
         include: {
           devices: {
             take: 5,
-            orderBy: { created_at: 'desc' }
+            orderBy: { created_at: "desc" },
           },
           users: {
             take: 5,
@@ -89,35 +94,35 @@ export class CompanyController {
               id: true,
               email: true,
               role: true,
-              created_at: true
-            }
+              created_at: true,
+            },
           },
           _count: {
             select: {
               devices: true,
               users: true,
               vehicles: true,
-              alerts: true
-            }
-          }
-        }
+              alerts: true,
+            },
+          },
+        },
       });
 
       if (!company) {
         return res.status(404).json({
           success: false,
-          error: 'Empresa não encontrada'
+          error: "Empresa não encontrada",
         });
       }
 
       res.json({
         success: true,
-        data: company
+        data: company,
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -129,25 +134,25 @@ export class CompanyController {
 
       const company = await prisma.companies.update({
         where: { id },
-        data: { name }
+        data: { name },
       });
 
       res.json({
         success: true,
-        message: 'Empresa atualizada com sucesso',
-        data: company
+        message: "Empresa atualizada com sucesso",
+        data: company,
       });
     } catch (error: any) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         return res.status(404).json({
           success: false,
-          error: 'Empresa não encontrada'
+          error: "Empresa não encontrada",
         });
       }
 
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -157,24 +162,24 @@ export class CompanyController {
       const { id } = req.params;
 
       await prisma.companies.delete({
-        where: { id }
+        where: { id },
       });
 
       res.json({
         success: true,
-        message: 'Empresa excluída com sucesso'
+        message: "Empresa excluída com sucesso",
       });
     } catch (error: any) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         return res.status(404).json({
           success: false,
-          error: 'Empresa não encontrada'
+          error: "Empresa não encontrada",
         });
       }
 
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }

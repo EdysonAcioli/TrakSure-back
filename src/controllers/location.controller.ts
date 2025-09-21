@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -11,7 +11,15 @@ interface AuthRequest extends Request {
 export class LocationController {
   static async findAll(req: AuthRequest, res: Response) {
     try {
-      const { page = 1, limit = 50, sort = 'recorded_at', order = 'desc', device_id, start_date, end_date } = req.query;
+      const {
+        page = 1,
+        limit = 50,
+        sort = "recorded_at",
+        order = "desc",
+        device_id,
+        start_date,
+        end_date,
+      } = req.query;
       const offset = (page - 1) * limit;
 
       // Construir filtros
@@ -20,7 +28,7 @@ export class LocationController {
       if (device_id) {
         // Verificar se usuário tem acesso ao dispositivo
         const deviceWhere: any = { id: device_id };
-        if (req.user.role !== 'admin') {
+        if (req.user.role !== "admin") {
           deviceWhere.company_id = req.user.company_id;
         }
 
@@ -28,16 +36,16 @@ export class LocationController {
         if (!device) {
           return res.status(404).json({
             success: false,
-            error: 'Dispositivo não encontrado'
+            error: "Dispositivo não encontrado",
           });
         }
 
         where.device_id = device_id;
       } else {
         // Se não especificar dispositivo, filtrar por empresa
-        if (req.user.role !== 'admin') {
+        if (req.user.role !== "admin") {
           where.devices = {
-            company_id: req.user.company_id
+            company_id: req.user.company_id,
           };
         }
       }
@@ -64,14 +72,14 @@ export class LocationController {
                 companies: {
                   select: {
                     id: true,
-                    name: true
-                  }
-                }
-              }
-            }
-          }
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
         }),
-        prisma.locations.count({ where })
+        prisma.locations.count({ where }),
       ]);
 
       res.json({
@@ -82,21 +90,22 @@ export class LocationController {
             page,
             limit,
             total,
-            totalPages: Math.ceil(total / limit)
-          }
-        }
+            totalPages: Math.ceil(total / limit),
+          },
+        },
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
 
   static async create(req: Request, res: Response) {
     try {
-      const { device_id, latitude, longitude, speed, heading, raw_payload } = req.body;
+      const { device_id, latitude, longitude, speed, heading, raw_payload } =
+        req.body;
 
       // Criar localização usando SQL raw para garantir que a geometria seja calculada
       const result = await prisma.$executeRaw`
@@ -109,17 +118,17 @@ export class LocationController {
       // Atualizar last_seen do dispositivo
       await prisma.devices.update({
         where: { id: device_id },
-        data: { last_seen: new Date() }
+        data: { last_seen: new Date() },
       });
 
       res.status(201).json({
         success: true,
-        message: 'Localização salva com sucesso'
+        message: "Localização salva com sucesso",
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -131,13 +140,13 @@ export class LocationController {
       if (!device_id) {
         return res.status(400).json({
           success: false,
-          error: 'device_id é obrigatório'
+          error: "device_id é obrigatório",
         });
       }
 
       // Verificar acesso ao dispositivo
       const deviceWhere: any = { id: device_id };
-      if (req.user.role !== 'admin') {
+      if (req.user.role !== "admin") {
         deviceWhere.company_id = req.user.company_id;
       }
 
@@ -145,7 +154,7 @@ export class LocationController {
       if (!device) {
         return res.status(404).json({
           success: false,
-          error: 'Dispositivo não encontrado'
+          error: "Dispositivo não encontrado",
         });
       }
 
@@ -159,14 +168,14 @@ export class LocationController {
 
       const locations = await prisma.locations.findMany({
         where,
-        orderBy: { recorded_at: 'asc' },
+        orderBy: { recorded_at: "asc" },
         select: {
           latitude: true,
           longitude: true,
           speed: true,
           heading: true,
-          recorded_at: true
-        }
+          recorded_at: true,
+        },
       });
 
       // Calcular estatísticas da rota
@@ -178,28 +187,42 @@ export class LocationController {
         for (let i = 1; i < locations.length; i++) {
           const prev = locations[i - 1];
           const curr = locations[i];
-          
-          if (prev && curr && prev.latitude && prev.longitude && curr.latitude && curr.longitude) {
+
+          if (
+            prev &&
+            curr &&
+            prev.latitude &&
+            prev.longitude &&
+            curr.latitude &&
+            curr.longitude
+          ) {
             // Calcular distância usando fórmula haversine (aproximada)
             const distance = calculateDistance(
-              prev.latitude, prev.longitude,
-              curr.latitude, curr.longitude
+              prev.latitude,
+              prev.longitude,
+              curr.latitude,
+              curr.longitude
             );
             totalDistance += distance;
           }
-          
+
           if (curr && curr.speed && curr.speed > maxSpeed) {
             maxSpeed = curr.speed;
           }
         }
 
-        const speedSum = locations.reduce((sum: number, loc: any) => sum + (loc.speed || 0), 0);
+        const speedSum = locations.reduce(
+          (sum: number, loc: any) => sum + (loc.speed || 0),
+          0
+        );
         avgSpeed = speedSum / locations.length;
       }
 
-      const duration = locations.length > 1 
-        ? new Date(locations[locations.length - 1]?.recorded_at!).getTime() - new Date(locations[0]?.recorded_at!).getTime()
-        : 0;
+      const duration =
+        locations.length > 1
+          ? new Date(locations[locations.length - 1]?.recorded_at!).getTime() -
+            new Date(locations[0]?.recorded_at!).getTime()
+          : 0;
 
       res.json({
         success: true,
@@ -210,14 +233,14 @@ export class LocationController {
             maxSpeed: Math.round(maxSpeed * 100) / 100, // km/h
             avgSpeed: Math.round(avgSpeed * 100) / 100, // km/h
             duration: duration, // ms
-            points: locations.length
-          }
-        }
+            points: locations.length,
+          },
+        },
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -232,7 +255,7 @@ export class LocationController {
       if (device_id) {
         // Verificar acesso ao dispositivo
         const deviceWhere: any = { id: device_id };
-        if (req.user.role !== 'admin') {
+        if (req.user.role !== "admin") {
           deviceWhere.company_id = req.user.company_id;
         }
 
@@ -240,16 +263,16 @@ export class LocationController {
         if (!device) {
           return res.status(404).json({
             success: false,
-            error: 'Dispositivo não encontrado'
+            error: "Dispositivo não encontrado",
           });
         }
 
         where.device_id = device_id;
       } else {
         // Filtrar por empresa
-        if (req.user.role !== 'admin') {
+        if (req.user.role !== "admin") {
           where.devices = {
-            company_id: req.user.company_id
+            company_id: req.user.company_id,
           };
         }
       }
@@ -268,9 +291,21 @@ export class LocationController {
           ROUND(longitude::numeric, 4) as lng,
           COUNT(*) as intensity
         FROM locations l
-        ${device_id ? prisma.$queryRaw`WHERE device_id = ${device_id}::uuid` : prisma.$queryRaw``}
-        ${start_date ? prisma.$queryRaw`AND recorded_at >= ${new Date(start_date)}` : prisma.$queryRaw``}
-        ${end_date ? prisma.$queryRaw`AND recorded_at <= ${new Date(end_date)}` : prisma.$queryRaw``}
+        ${
+          device_id
+            ? prisma.$queryRaw`WHERE device_id = ${device_id}::uuid`
+            : prisma.$queryRaw``
+        }
+        ${
+          start_date
+            ? prisma.$queryRaw`AND recorded_at >= ${new Date(start_date)}`
+            : prisma.$queryRaw``
+        }
+        ${
+          end_date
+            ? prisma.$queryRaw`AND recorded_at <= ${new Date(end_date)}`
+            : prisma.$queryRaw``
+        }
         GROUP BY ROUND(latitude::numeric, 4), ROUND(longitude::numeric, 4)
         ORDER BY intensity DESC
         LIMIT 1000
@@ -278,26 +313,33 @@ export class LocationController {
 
       res.json({
         success: true,
-        data: { heatmap: heatmapData }
+        data: { heatmap: heatmapData },
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
 }
 
 // Função auxiliar para calcular distância entre dois pontos
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function calculateDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
   const R = 6371; // Raio da Terra em km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }

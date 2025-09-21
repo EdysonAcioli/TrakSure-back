@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -19,39 +19,45 @@ export class AlertController {
           device_id,
           alert_type,
           message,
-          company_id: finalCompanyId
+          company_id: finalCompanyId,
         },
         include: {
           devices: { select: { imei: true, name: true } },
-          companies: { select: { name: true } }
-        }
+          companies: { select: { name: true } },
+        },
       });
 
       res.status(201).json({
         success: true,
-        message: 'Alerta criado com sucesso',
-        data: alert
+        message: "Alerta criado com sucesso",
+        data: alert,
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
 
   static async findAll(req: AuthRequest, res: Response) {
     try {
-      const { page = 1, limit = 10, sort = 'created_at', order = 'desc', resolved } = req.query;
+      const {
+        page = 1,
+        limit = 10,
+        sort = "created_at",
+        order = "desc",
+        resolved,
+      } = req.query;
       const offset = (page - 1) * limit;
 
       const where: any = {};
-      if (req.user.role !== 'admin') {
+      if (req.user.role !== "admin") {
         where.company_id = req.user.company_id;
       }
 
       if (resolved !== undefined) {
-        where.resolved_at = resolved === 'true' ? { not: null } : null;
+        where.resolved_at = resolved === "true" ? { not: null } : null;
       }
 
       const [alerts, total] = await Promise.all([
@@ -62,10 +68,10 @@ export class AlertController {
           orderBy: { [sort]: order },
           include: {
             devices: { select: { imei: true, name: true } },
-            companies: { select: { name: true } }
-          }
+            companies: { select: { name: true } },
+          },
         }),
-        prisma.alerts.count({ where })
+        prisma.alerts.count({ where }),
       ]);
 
       res.json({
@@ -76,14 +82,14 @@ export class AlertController {
             page,
             limit,
             total,
-            totalPages: Math.ceil(total / limit)
-          }
-        }
+            totalPages: Math.ceil(total / limit),
+          },
+        },
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -93,31 +99,31 @@ export class AlertController {
       const { id } = req.params;
 
       const where: any = { id };
-      if (req.user.role !== 'admin') {
+      if (req.user.role !== "admin") {
         where.company_id = req.user.company_id;
       }
 
       const alert = await prisma.alerts.update({
         where,
-        data: { resolved_at: new Date() }
+        data: { resolved_at: new Date() },
       });
 
       res.json({
         success: true,
-        message: 'Alerta resolvido com sucesso',
-        data: alert
+        message: "Alerta resolvido com sucesso",
+        data: alert,
       });
     } catch (error: any) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         return res.status(404).json({
           success: false,
-          error: 'Alerta não encontrado'
+          error: "Alerta não encontrado",
         });
       }
 
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }

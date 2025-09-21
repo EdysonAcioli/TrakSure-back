@@ -1,13 +1,17 @@
-import { Router } from 'express';
-import { GeofenceController } from '../controllers/geofence.controller.js';
-import { validateBody, validateQuery } from '../middleware/validation.js';
-import { authMiddleware, companyMiddleware } from '../middleware/auth.js';
-import { createGeofenceSchema, paginationSchema } from '../schemas/validation.js';
+import { Router } from "express";
+import { GeofenceController } from "../controllers/geofence.controller.js";
+import { validateBody, validateQuery } from "../middleware/validation.js";
+import { authMiddleware, companyMiddleware } from "../middleware/auth.js";
+import {
+  createGeofenceSchema,
+  paginationSchema,
+} from "../schemas/validation.js";
 
 const router = Router();
 
 // GET /geofences
-router.get('/',
+router.get(
+  "/",
   authMiddleware,
   companyMiddleware,
   validateQuery(paginationSchema),
@@ -15,14 +19,16 @@ router.get('/',
 );
 
 // GET /geofences/:id
-router.get('/:id',
+router.get(
+  "/:id",
   authMiddleware,
   companyMiddleware,
   GeofenceController.findById
 );
 
 // POST /geofences
-router.post('/',
+router.post(
+  "/",
   authMiddleware,
   companyMiddleware,
   validateBody(createGeofenceSchema),
@@ -30,21 +36,24 @@ router.post('/',
 );
 
 // PUT /geofences/:id
-router.put('/:id',
+router.put(
+  "/:id",
   authMiddleware,
   companyMiddleware,
   GeofenceController.update
 );
 
 // DELETE /geofences/:id
-router.delete('/:id',
+router.delete(
+  "/:id",
   authMiddleware,
   companyMiddleware,
   GeofenceController.delete
 );
 
 // GET /geofences/check/location
-router.get('/check/location',
+router.get(
+  "/check/location",
   authMiddleware,
   companyMiddleware,
   GeofenceController.checkDeviceLocation

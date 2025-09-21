@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -11,7 +11,7 @@ interface AuthRequest extends Request {
 export class DashboardController {
   static async getStats(req: AuthRequest, res: Response) {
     try {
-      const isAdmin = req.user.role === 'admin';
+      const isAdmin = req.user.role === "admin";
       const companyFilter = isAdmin ? {} : { company_id: req.user.company_id };
 
       const [
@@ -19,29 +19,31 @@ export class DashboardController {
         onlineDevices,
         totalLocations,
         activeAlerts,
-        totalCompanies
+        totalCompanies,
       ] = await Promise.all([
         prisma.devices.count({ where: companyFilter }),
         prisma.devices.count({
           where: {
             ...companyFilter,
             last_seen: {
-              gte: new Date(Date.now() - 5 * 60 * 1000) // últimos 5 minutos
-            }
-          }
+              gte: new Date(Date.now() - 5 * 60 * 1000), // últimos 5 minutos
+            },
+          },
         }),
         prisma.locations.count({
-          where: isAdmin ? {} : {
-            devices: { company_id: req.user.company_id }
-          }
+          where: isAdmin
+            ? {}
+            : {
+                devices: { company_id: req.user.company_id },
+              },
         }),
         prisma.alerts.count({
           where: {
             ...companyFilter,
-            resolved_at: null
-          }
+            resolved_at: null,
+          },
         }),
-        isAdmin ? prisma.companies.count() : 1
+        isAdmin ? prisma.companies.count() : 1,
       ]);
 
       res.json({
@@ -53,14 +55,14 @@ export class DashboardController {
             offlineDevices: totalDevices - onlineDevices,
             totalLocations,
             activeAlerts,
-            totalCompanies
-          }
-        }
+            totalCompanies,
+          },
+        },
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -68,14 +70,17 @@ export class DashboardController {
   static async getDeviceActivity(req: AuthRequest, res: Response) {
     try {
       const { days = 7 } = req.query;
-      const startDate = new Date(Date.now() - (days as number) * 24 * 60 * 60 * 1000);
+      const startDate = new Date(
+        Date.now() - (days as number) * 24 * 60 * 60 * 1000
+      );
 
-      const isAdmin = req.user.role === 'admin';
-      const companyCondition = isAdmin 
-        ? '' 
+      const isAdmin = req.user.role === "admin";
+      const companyCondition = isAdmin
+        ? ""
         : `AND d.company_id = '${req.user.company_id}'`;
 
-      const activity = await prisma.$queryRawUnsafe(`
+      const activity = await prisma.$queryRawUnsafe(
+        `
         SELECT 
           DATE(l.recorded_at) as date,
           COUNT(DISTINCT l.device_id) as active_devices,
@@ -85,16 +90,18 @@ export class DashboardController {
         WHERE l.recorded_at >= $1 ${companyCondition}
         GROUP BY DATE(l.recorded_at)
         ORDER BY date
-      `, startDate);
+      `,
+        startDate
+      );
 
       res.json({
         success: true,
-        data: { activity }
+        data: { activity },
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -102,43 +109,50 @@ export class DashboardController {
   static async getAlertsSummary(req: AuthRequest, res: Response) {
     try {
       const { days = 30 } = req.query;
-      const startDate = new Date(Date.now() - (days as number) * 24 * 60 * 60 * 1000);
+      const startDate = new Date(
+        Date.now() - (days as number) * 24 * 60 * 60 * 1000
+      );
 
-      const isAdmin = req.user.role === 'admin';
+      const isAdmin = req.user.role === "admin";
       const companyFilter = isAdmin ? {} : { company_id: req.user.company_id };
 
       const [alertsByType, alertsTrend] = await Promise.all([
         prisma.alerts.groupBy({
-          by: ['alert_type'],
+          by: ["alert_type"],
           where: {
             ...companyFilter,
-            created_at: { gte: startDate }
+            created_at: { gte: startDate },
           },
-          _count: true
+          _count: true,
         }),
-        prisma.$queryRawUnsafe(`
+        prisma.$queryRawUnsafe(
+          `
           SELECT 
             DATE(created_at) as date,
             COUNT(*) as count,
             COUNT(CASE WHEN resolved_at IS NULL THEN 1 END) as unresolved
           FROM alerts
-          WHERE created_at >= $1 ${isAdmin ? '' : `AND company_id = '${req.user.company_id}'`}
+          WHERE created_at >= $1 ${
+            isAdmin ? "" : `AND company_id = '${req.user.company_id}'`
+          }
           GROUP BY DATE(created_at)
           ORDER BY date
-        `, startDate)
+        `,
+          startDate
+        ),
       ]);
 
       res.json({
         success: true,
         data: {
           alertsByType,
-          alertsTrend
-        }
+          alertsTrend,
+        },
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -146,14 +160,17 @@ export class DashboardController {
   static async getTopDevices(req: AuthRequest, res: Response) {
     try {
       const { days = 7, limit = 10 } = req.query;
-      const startDate = new Date(Date.now() - (days as number) * 24 * 60 * 60 * 1000);
+      const startDate = new Date(
+        Date.now() - (days as number) * 24 * 60 * 60 * 1000
+      );
 
-      const isAdmin = req.user.role === 'admin';
-      const companyCondition = isAdmin 
-        ? '' 
+      const isAdmin = req.user.role === "admin";
+      const companyCondition = isAdmin
+        ? ""
         : `AND d.company_id = '${req.user.company_id}'`;
 
-      const topDevices = await prisma.$queryRawUnsafe(`
+      const topDevices = await prisma.$queryRawUnsafe(
+        `
         SELECT 
           d.id,
           d.imei,
@@ -170,16 +187,19 @@ export class DashboardController {
         GROUP BY d.id, d.imei, d.name, c.name
         ORDER BY location_count DESC
         LIMIT $2
-      `, startDate, limit);
+      `,
+        startDate,
+        limit
+      );
 
       res.json({
         success: true,
-        data: { topDevices }
+        data: { topDevices },
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }

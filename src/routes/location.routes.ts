@@ -1,13 +1,17 @@
-import { Router } from 'express';
-import { LocationController } from '../controllers/location.controller.js';
-import { validateBody, validateQuery } from '../middleware/validation.js';
-import { authMiddleware, companyMiddleware } from '../middleware/auth.js';
-import { createLocationSchema, locationQuerySchema } from '../schemas/validation.js';
+import { Router } from "express";
+import { LocationController } from "../controllers/location.controller.js";
+import { validateBody, validateQuery } from "../middleware/validation.js";
+import { authMiddleware, companyMiddleware } from "../middleware/auth.js";
+import {
+  createLocationSchema,
+  locationQuerySchema,
+} from "../schemas/validation.js";
 
 const router = Router();
 
 // GET /locations
-router.get('/',
+router.get(
+  "/",
   authMiddleware,
   companyMiddleware,
   validateQuery(locationQuerySchema),
@@ -15,13 +19,11 @@ router.get('/',
 );
 
 // POST /locations
-router.post('/',
-  validateBody(createLocationSchema),
-  LocationController.create
-);
+router.post("/", validateBody(createLocationSchema), LocationController.create);
 
 // GET /locations/route
-router.get('/route',
+router.get(
+  "/route",
   authMiddleware,
   companyMiddleware,
   validateQuery(locationQuerySchema),
@@ -29,7 +31,8 @@ router.get('/route',
 );
 
 // GET /locations/heatmap
-router.get('/heatmap',
+router.get(
+  "/heatmap",
   authMiddleware,
   companyMiddleware,
   validateQuery(locationQuerySchema),

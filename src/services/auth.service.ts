@@ -1,21 +1,26 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 export class AuthService {
-  private static JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-  private static JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
+  private static JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+  private static JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "24h";
 
-  static async register(email: string, password: string, role: string = 'user', company_id?: string) {
+  static async register(
+    email: string,
+    password: string,
+    role: string = "user",
+    company_id?: string
+  ) {
     // Verificar se usuário já existe
     const existingUser = await prisma.users.findUnique({
-      where: { email }
+      where: { email },
     });
 
     if (existingUser) {
-      throw new Error('Usuário já existe com este email');
+      throw new Error("Usuário já existe com este email");
     }
 
     // Hash da senha
@@ -28,15 +33,15 @@ export class AuthService {
         email,
         password_hash,
         role,
-        company_id
+        company_id,
       },
       select: {
         id: true,
         email: true,
         role: true,
         company_id: true,
-        created_at: true
-      }
+        created_at: true,
+      },
     });
 
     // Gerar token
@@ -50,19 +55,19 @@ export class AuthService {
     const user = await prisma.users.findUnique({
       where: { email },
       include: {
-        companies: true
-      }
+        companies: true,
+      },
     });
 
     if (!user) {
-      throw new Error('Email ou senha inválidos');
+      throw new Error("Email ou senha inválidos");
     }
 
     // Verificar senha
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
 
     if (!isValidPassword) {
-      throw new Error('Email ou senha inválidos');
+      throw new Error("Email ou senha inválidos");
     }
 
     // Gerar token
@@ -75,11 +80,9 @@ export class AuthService {
   }
 
   static generateToken(userId: string): string {
-    return jwt.sign(
-      { userId },
-      this.JWT_SECRET,
-      { expiresIn: this.JWT_EXPIRES_IN } as any
-    );
+    return jwt.sign({ userId }, this.JWT_SECRET, {
+      expiresIn: this.JWT_EXPIRES_IN,
+    } as any);
   }
 
   static async verifyToken(token: string) {
@@ -87,7 +90,7 @@ export class AuthService {
       const decoded = jwt.verify(token, this.JWT_SECRET) as any;
       return decoded;
     } catch (error) {
-      throw new Error('Token inválido');
+      throw new Error("Token inválido");
     }
   }
 
@@ -95,8 +98,8 @@ export class AuthService {
     const user = await prisma.users.findUnique({
       where: { id },
       include: {
-        companies: true
-      }
+        companies: true,
+      },
     });
 
     if (!user) return null;

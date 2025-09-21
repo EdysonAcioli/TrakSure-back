@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -22,44 +22,51 @@ export class DeviceController {
           name,
           sim_number,
           company_id: finalCompanyId,
-          model_id
+          model_id,
         },
         include: {
           companies: true,
-          device_models: true
-        }
+          device_models: true,
+        },
       });
 
       res.status(201).json({
         success: true,
-        message: 'Dispositivo criado com sucesso',
-        data: device
+        message: "Dispositivo criado com sucesso",
+        data: device,
       });
     } catch (error: any) {
-      if (error.code === 'P2002') {
+      if (error.code === "P2002") {
         return res.status(400).json({
           success: false,
-          error: 'IMEI já cadastrado no sistema'
+          error: "IMEI já cadastrado no sistema",
         });
       }
 
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
 
   static async findAll(req: AuthRequest, res: Response) {
     try {
-      const { page = 1, limit = 10, sort = 'created_at', order = 'desc', company_id, online } = req.query;
+      const {
+        page = 1,
+        limit = 10,
+        sort = "created_at",
+        order = "desc",
+        company_id,
+        online,
+      } = req.query;
       const offset = (page - 1) * limit;
 
       // Filtros
       const where: any = {};
-      
+
       // Se não for admin, filtrar pela empresa do usuário
-      if (req.user.role !== 'admin') {
+      if (req.user.role !== "admin") {
         where.company_id = req.user.company_id;
       } else if (company_id) {
         where.company_id = company_id;
@@ -69,12 +76,12 @@ export class DeviceController {
         // Considerar dispositivo online se teve atividade nos últimos 5 minutos
         if (online) {
           where.last_seen = {
-            gte: new Date(Date.now() - 5 * 60 * 1000)
+            gte: new Date(Date.now() - 5 * 60 * 1000),
           };
         } else {
           where.OR = [
             { last_seen: null },
-            { last_seen: { lt: new Date(Date.now() - 5 * 60 * 1000) } }
+            { last_seen: { lt: new Date(Date.now() - 5 * 60 * 1000) } },
           ];
         }
       }
@@ -91,18 +98,20 @@ export class DeviceController {
             _count: {
               select: {
                 locations: true,
-                alerts: true
-              }
-            }
-          }
+                alerts: true,
+              },
+            },
+          },
         }),
-        prisma.devices.count({ where })
+        prisma.devices.count({ where }),
       ]);
 
       // Adicionar status online
       const devicesWithStatus = devices.map((device: any) => ({
         ...device,
-        online: device.last_seen && device.last_seen > new Date(Date.now() - 5 * 60 * 1000)
+        online:
+          device.last_seen &&
+          device.last_seen > new Date(Date.now() - 5 * 60 * 1000),
       }));
 
       res.json({
@@ -113,14 +122,14 @@ export class DeviceController {
             page,
             limit,
             total,
-            totalPages: Math.ceil(total / limit)
-          }
-        }
+            totalPages: Math.ceil(total / limit),
+          },
+        },
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -130,9 +139,9 @@ export class DeviceController {
       const { id } = req.params;
 
       const where: any = { id };
-      
+
       // Se não for admin, filtrar pela empresa do usuário
-      if (req.user.role !== 'admin') {
+      if (req.user.role !== "admin") {
         where.company_id = req.user.company_id;
       }
 
@@ -143,53 +152,55 @@ export class DeviceController {
           device_models: true,
           locations: {
             take: 10,
-            orderBy: { recorded_at: 'desc' },
+            orderBy: { recorded_at: "desc" },
             select: {
               id: true,
               latitude: true,
               longitude: true,
               speed: true,
               heading: true,
-              recorded_at: true
-            }
+              recorded_at: true,
+            },
           },
           alerts: {
             take: 5,
-            orderBy: { created_at: 'desc' },
-            where: { resolved_at: null }
+            orderBy: { created_at: "desc" },
+            where: { resolved_at: null },
           },
           _count: {
             select: {
               locations: true,
               alerts: true,
-              commands: true
-            }
-          }
-        }
+              commands: true,
+            },
+          },
+        },
       });
 
       if (!device) {
         return res.status(404).json({
           success: false,
-          error: 'Dispositivo não encontrado'
+          error: "Dispositivo não encontrado",
         });
       }
 
       // Adicionar status online e última localização
       const deviceWithStatus = {
         ...device,
-        online: device.last_seen && device.last_seen > new Date(Date.now() - 5 * 60 * 1000),
-        latest_location: device.locations[0] || null
+        online:
+          device.last_seen &&
+          device.last_seen > new Date(Date.now() - 5 * 60 * 1000),
+        latest_location: device.locations[0] || null,
       };
 
       res.json({
         success: true,
-        data: deviceWithStatus
+        data: deviceWithStatus,
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -200,9 +211,9 @@ export class DeviceController {
       const { name, sim_number, company_id, model_id } = req.body;
 
       const where: any = { id };
-      
+
       // Se não for admin, filtrar pela empresa do usuário
-      if (req.user.role !== 'admin') {
+      if (req.user.role !== "admin") {
         where.company_id = req.user.company_id;
       }
 
@@ -212,30 +223,30 @@ export class DeviceController {
           name,
           sim_number,
           company_id,
-          model_id
+          model_id,
         },
         include: {
           companies: true,
-          device_models: true
-        }
+          device_models: true,
+        },
       });
 
       res.json({
         success: true,
-        message: 'Dispositivo atualizado com sucesso',
-        data: device
+        message: "Dispositivo atualizado com sucesso",
+        data: device,
       });
     } catch (error: any) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         return res.status(404).json({
           success: false,
-          error: 'Dispositivo não encontrado'
+          error: "Dispositivo não encontrado",
         });
       }
 
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -245,9 +256,9 @@ export class DeviceController {
       const { id } = req.params;
 
       const where: any = { id };
-      
+
       // Se não for admin, filtrar pela empresa do usuário
-      if (req.user.role !== 'admin') {
+      if (req.user.role !== "admin") {
         where.company_id = req.user.company_id;
       }
 
@@ -255,19 +266,19 @@ export class DeviceController {
 
       res.json({
         success: true,
-        message: 'Dispositivo excluído com sucesso'
+        message: "Dispositivo excluído com sucesso",
       });
     } catch (error: any) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         return res.status(404).json({
           success: false,
-          error: 'Dispositivo não encontrado'
+          error: "Dispositivo não encontrado",
         });
       }
 
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -280,7 +291,7 @@ export class DeviceController {
 
       // Verificar se dispositivo existe e usuário tem acesso
       const where: any = { id };
-      if (req.user.role !== 'admin') {
+      if (req.user.role !== "admin") {
         where.company_id = req.user.company_id;
       }
 
@@ -288,7 +299,7 @@ export class DeviceController {
       if (!device) {
         return res.status(404).json({
           success: false,
-          error: 'Dispositivo não encontrado'
+          error: "Dispositivo não encontrado",
         });
       }
 
@@ -305,9 +316,9 @@ export class DeviceController {
           where: locationWhere,
           skip: offset,
           take: limit,
-          orderBy: { recorded_at: 'desc' }
+          orderBy: { recorded_at: "desc" },
         }),
-        prisma.locations.count({ where: locationWhere })
+        prisma.locations.count({ where: locationWhere }),
       ]);
 
       res.json({
@@ -318,14 +329,14 @@ export class DeviceController {
             page,
             limit,
             total,
-            totalPages: Math.ceil(total / limit)
-          }
-        }
+            totalPages: Math.ceil(total / limit),
+          },
+        },
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -336,7 +347,7 @@ export class DeviceController {
 
       // Verificar se dispositivo existe e usuário tem acesso
       const where: any = { id };
-      if (req.user.role !== 'admin') {
+      if (req.user.role !== "admin") {
         where.company_id = req.user.company_id;
       }
 
@@ -344,23 +355,23 @@ export class DeviceController {
       if (!device) {
         return res.status(404).json({
           success: false,
-          error: 'Dispositivo não encontrado'
+          error: "Dispositivo não encontrado",
         });
       }
 
       const location = await prisma.locations.findFirst({
         where: { device_id: id },
-        orderBy: { recorded_at: 'desc' }
+        orderBy: { recorded_at: "desc" },
       });
 
       res.json({
         success: true,
-        data: { location }
+        data: { location },
       });
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }

@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { ZodSchema } from 'zod';
+import { Request, Response, NextFunction } from "express";
+import { ZodSchema } from "zod";
 
 export const validateBody = (schema: ZodSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -8,8 +8,8 @@ export const validateBody = (schema: ZodSchema) => {
       next();
     } catch (error: any) {
       res.status(400).json({
-        error: 'Validation error',
-        details: error.errors || error.message
+        error: "Validation error",
+        details: error.errors || error.message,
       });
     }
   };
@@ -23,8 +23,8 @@ export const validateQuery = (schema: ZodSchema) => {
       next();
     } catch (error: any) {
       res.status(400).json({
-        error: 'Query validation error',
-        details: error.errors || error.message
+        error: "Query validation error",
+        details: error.errors || error.message,
       });
     }
   };
@@ -38,8 +38,8 @@ export const validateParams = (schema: ZodSchema) => {
       next();
     } catch (error: any) {
       res.status(400).json({
-        error: 'Params validation error',
-        details: error.errors || error.message
+        error: "Params validation error",
+        details: error.errors || error.message,
       });
     }
   };
